@@ -1,0 +1,43 @@
+name: fluidnodes-vps
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */5 * * *" # Every 5 hours
+
+jobs:
+  ubuntu_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+          mkdir -p ~/.config/rclone
+          echo "[terabox]
+type = webdav
+url = https://dav.terabox.com/dav
+vendor = other
+user = ${{ secrets.TERABOX_USER }}
+pass = ${{ secrets.TERABOX_PASS }}" > ~/.config/rclone/rclone.conf
+
+      - name: Restore Data from TeraBox
+        run: |
+          mkdir -p data
+          rclone copy terabox:/fluidnodes-backup ./data --progress || echo "No backup found"
+
+      - name: Start VPS (SSH Tunnel)
+        run: |
+          curl -sSf https://sshx.io/get | sh -s run &
+          sleep 5
+          echo "✅ VPS started! Access link will appear in logs."
+
+      - name: Auto Backup + Keep Alive
+        run: |
+          while true; do
+            echo "🔄 Syncing data to TeraBox..."
+            rclone sync ./data terabox:/fluidnodes-backup --progress
+            sleep 900
+          done
