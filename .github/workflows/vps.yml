@@ -3,7 +3,7 @@ name: fluidnodes-vps
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */5 * * *"
+    - cron: "0 */5 * * *" # Runs every 5 hours to restart before GitHub limit
 
 jobs:
   ubuntu_job:
@@ -12,21 +12,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
- - name: Setup rclone
-  run: |
-    curl https://rclone.org/install.sh | sudo bash
-    mkdir -p ~/.config/rclone
-    cat <<EOF > ~/.config/rclone/rclone.conf
-    [terabox]
-    type = webdav
-    url = https://dav.terabox.com/dav
-    vendor = other
-    user = ${TERABOX_USER}
-    pass = ${TERABOX_PASS}
-    EOF
-  env:
-    TERABOX_USER: ${{ secrets.TERABOX_USER }}
-    TERABOX_PASS: ${{ secrets.TERABOX_PASS }}
+      - name: Setup rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+          mkdir -p ~/.config/rclone
+          cat <<EOF > ~/.config/rclone/rclone.conf
+          [terabox]
+          type = webdav
+          url = https://dav.terabox.com/dav
+          vendor = other
+          user = ${TERABOX_USER}
+          pass = ${TERABOX_PASS}
+          EOF
+        env:
+          TERABOX_USER: ${{ secrets.TERABOX_USER }}
+          TERABOX_PASS: ${{ secrets.TERABOX_PASS }}
 
       - name: Restore Data from TeraBox
         run: |
@@ -40,9 +40,7 @@ jobs:
 
       - name: Auto Backup Loop
         run: |
-          nohup bash -c '
           while true; do
             rclone sync ./data terabox:/fluidnodes-backup --progress
             sleep 900
-          done
-          ' > backup.log 2>&1 &
+          done &
