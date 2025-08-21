@@ -12,16 +12,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup rclone
-        run: |
-          curl https://rclone.org/install.sh | sudo bash
-          mkdir -p ~/.config/rclone
-          echo "[terabox]
-type = webdav
-url = https://dav.terabox.com/dav
-vendor = other
-user = ${{ secrets.TERABOX_USER }}
-pass = ${{ secrets.TERABOX_PASS }}" > ~/.config/rclone/rclone.conf
+ - name: Setup rclone
+  run: |
+    curl https://rclone.org/install.sh | sudo bash
+    mkdir -p ~/.config/rclone
+    cat <<EOF > ~/.config/rclone/rclone.conf
+    [terabox]
+    type = webdav
+    url = https://dav.terabox.com/dav
+    vendor = other
+    user = ${TERABOX_USER}
+    pass = ${TERABOX_PASS}
+    EOF
+  env:
+    TERABOX_USER: ${{ secrets.TERABOX_USER }}
+    TERABOX_PASS: ${{ secrets.TERABOX_PASS }}
 
       - name: Restore Data from TeraBox
         run: |
